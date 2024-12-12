@@ -159,3 +159,57 @@ function exportRangeToPDF(range) {
     Logger.log("PDF created for sheet: " + sheetTabNameToGet[i] + ", File ID: " + pdfFile.getId());
   }
 }
+// and this for combined pdf and download into local computer
+function generatePDF() {
+  var blob, exportUrl, options, response, ss, ssID, url_base;
+
+  // Get the active spreadsheet and its ID
+  ss = SpreadsheetApp.getActiveSpreadsheet();
+  ssID = ss.getId();
+  url_base = ss.getUrl().replace(/edit$/, '');
+
+  // Export URL to export the whole spreadsheet
+  exportUrl = url_base + 'export?exportFormat=pdf&format=pdf' +
+    '&id=' + ssID +
+    '&size=A4' + // Paper size
+    '&portrait=true' + // Orientation, false for landscape
+    '&fitw=true' + // Fit to width
+    '&sheetnames=true&printtitle=false&pagenumbers=true' + // Header and footer settings
+    '&gridlines=false' + // Hide gridlines
+    '&fzr=false'; // Do not repeat frozen rows on each page
+
+  options = {
+    headers: {
+      'Authorization': 'Bearer ' + ScriptApp.getOAuthToken(),
+    },
+    muteHttpExceptions: true
+  };
+
+  try {
+    response = UrlFetchApp.fetch(exportUrl, options);
+
+    if (response.getResponseCode() !== 200) {
+      return ContentService.createTextOutput("Error exporting spreadsheet to PDF. Response Code: " + response.getResponseCode());
+    }
+
+    blob = response.getBlob();
+    blob.setName('Complete_Spreadsheet_Export.pdf');
+
+    // Save the PDF file in Google Drive
+    var pdfFile = DriveApp.createFile(blob);
+
+    // Generate download link
+    var downloadUrl = 'https://drive.google.com/uc?export=download&id=' + pdfFile.getId();
+    return downloadUrl;
+  } catch (e) {
+    return "Error: " + e.message;
+  }
+}
+      // document.getElementById('generate-pdf').addEventListener('click', function() {
+      //   google.script.run.withSuccessHandler(openPdf).generatePDF();
+      // });
+
+      // function openPdf(downloadUrl) {
+      //   console.log(downloadUrl)
+      //   window.open(downloadUrl, '_blank');
+      // }
